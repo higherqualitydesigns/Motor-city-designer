@@ -65,6 +65,8 @@ const state = {
   activeFilter: 'all',
   query: '',
   cart: loadCart(),
+  authToken: window.localStorage.getItem('motor-city-token') || '',
+  user: null,
 };
 
 const API_BASE_URL = window.location.origin;
@@ -91,6 +93,17 @@ const chatbotQuickActions = document.querySelector('#chatbot-quick-actions');
 const fluidCanvas = document.querySelector('#fluid-bg');
 const particleCanvas = document.querySelector('#particle-layer');
 const checkoutFeedback = document.querySelector('#checkout-feedback');
+const signupForm = document.querySelector('#signup-form');
+const loginForm = document.querySelector('#login-form');
+const logoutButton = document.querySelector('#logout-button');
+const authStatus = document.querySelector('#auth-status');
+const authFeedback = document.querySelector('#auth-feedback');
+const orderList = document.querySelector('#order-list');
+const inboxList = document.querySelector('#inbox-list');
+const adminPanel = document.querySelector('#admin-panel');
+const adminRefresh = document.querySelector('#admin-refresh');
+const adminUsers = document.querySelector('#admin-users');
+const adminOrders = document.querySelector('#admin-orders');
 
 function loadCart() {
   try {
@@ -283,6 +296,101 @@ function cartSubtotalValue() {
   }, 0);
 }
 
+async function apiFetch(path, options = {}) {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(options.headers || {}),
+  };
+  if (state.authToken) {
+    headers.Authorization = `Bearer ${state.authToken}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.error || 'Request failed.');
+  }
+  return payload;
+}
+
+function setAuthFeedback(message, isError = false) {
+  if (!authFeedback) return;
+  authFeedback.textContent = message;
+  authFeedback.style.color = isError ? '#ffb7b7' : 'var(--success)';
+}
+
+function renderPortal(user = state.user) {
+  if (authStatus) {
+    authStatus.textContent = user
+      ? `Signed in as ${user.name} (${user.email}) — role: ${user.role || 'customer'}`
+      : 'Not signed in.';
+  }
+
+  if (adminPanel) {
+    adminPanel.hidden = !user || user.role !== 'admin';
+  }
+}
+
+async function loadSession() {
+  if (!state.authToken) {
+    state.user = null;
+    renderPortal();
+    return;
+  }
+
+  try {
+    const payload = await apiFetch('/api/session');
+    state.user = payload.user;
+    renderPortal(payload.user);
+    await Promise.all([loadOrders(), loadInbox()]);
+  } catch {
+    state.authToken = '';
+    state.user = null;
+    window.localStorage.removeItem('motor-city-token');
+    renderPortal();
+  }
+}
+
+async function loadOrders() {
+  if (!state.user || !orderList) {
+    return;
+  }
+  const payload = await apiFetch('/api/orders');
+  orderList.innerHTML = '';
+  if (!payload.orders.length) {
+    orderList.innerHTML = '<li>No orders yet.</li>';
+    return;
+  }
+
+  payload.orders.forEach((order) => {
+    const timeline = order.timeline.map((step) => `${step.stage} (${new Date(step.at).toLocaleString()})`).join(' → ');
+    const item = document.createElement('li');
+    item.innerHTML = `<strong>Order ${order.id.slice(0, 8)}</strong><br/>Stage: ${order.stage}<br/>${timeline}`;
+    orderList.appendChild(item);
+  });
+}
+
+async function loadInbox() {
+  if (!state.user || !inboxList) {
+    return;
+  }
+  const payload = await apiFetch('/api/inbox');
+  inboxList.innerHTML = '';
+  if (!payload.messages.length) {
+    inboxList.innerHTML = '<li>No inbox messages yet.</li>';
+    return;
+  }
+
+  payload.messages.forEach((message) => {
+    const item = document.createElement('li');
+    const download = message.metadata?.downloadUrl
+      ? `<br/><a href="${message.metadata.downloadUrl}" target="_blank" rel="noreferrer">Download file</a>`
+      : '';
+    item.innerHTML = `<strong>${message.title}</strong><br/>${message.body}${download}`;
+    inboxList.appendChild(item);
+  });
+}
+
 function startCheckout() {
   if (!state.cart.length) {
     checkoutFeedback.textContent = 'Add at least one package to continue.';
@@ -314,11 +422,23 @@ function startCheckout() {
 
   void (async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/billing/checkout/public-order`, {
+      if (state.user) {
+        const payload = await apiFetch('/api/orders/checkout', {
+          method: 'POST',
+          body: JSON.stringify({ items: cartLineItems })
+        });
+        state.cart = [];
+        saveCart();
+        renderCart();
+        checkoutFeedback.textContent = `Checkout complete. Receipt #${payload.receipt.receiptNumber}`;
+        checkoutButton.textContent = 'Start checkout';
+        checkoutButton.disabled = false;
+        await Promise.all([loadOrders(), loadInbox()]);
+        return;
+      }
+
+      const payload = await apiFetch('/api/billing/checkout/public-order', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify({
           amount,
           currency: 'USD',
@@ -328,16 +448,10 @@ function startCheckout() {
         })
       });
 
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(payload.error || 'Unable to create checkout order.');
-      }
-
       const approvalUrl = payload.links?.find((link) => link.rel === 'approve')?.href;
       if (!approvalUrl) {
-        throw new Error('PayPal approval URL missing from order response.');
+        throw new Error('Unable to create checkout order.');
       }
-
       window.location.assign(approvalUrl);
     } catch (error) {
       checkoutFeedback.textContent = error.message || 'Checkout failed. Please try again.';
@@ -446,6 +560,26 @@ function openChatbot() {
   chatbotInput.focus();
 }
 
+function handleCheckoutQueryStatus() {
+  const params = new URLSearchParams(window.location.search);
+  const checkout = params.get('checkout');
+  const localOrderId = params.get('localOrderId');
+
+  if (!checkoutFeedback || !checkout) {
+    return;
+  }
+
+  if (checkout === 'success') {
+    checkoutFeedback.textContent = localOrderId
+      ? `Checkout complete. Receipt generated for order ${localOrderId.slice(0, 8)}.`
+      : 'Checkout complete. Receipt is available in your account inbox.';
+    checkoutFeedback.style.color = 'var(--success)';
+  } else if (checkout === 'cancelled') {
+    checkoutFeedback.textContent = 'Checkout cancelled.';
+    checkoutFeedback.style.color = '#ffb7b7';
+  }
+}
+
 function closeChatbot() {
   chatbotPanel.hidden = true;
   chatbotLaunch.setAttribute('aria-expanded', 'false');
@@ -495,6 +629,76 @@ cartItems?.addEventListener('click', (event) => {
 });
 
 checkoutButton?.addEventListener('click', startCheckout);
+
+signupForm?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const formData = new FormData(signupForm);
+  try {
+    const payload = await apiFetch('/api/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: formData.get('name'),
+        email: formData.get('email'),
+        password: formData.get('password'),
+      }),
+    });
+    state.authToken = payload.token;
+    state.user = payload.user;
+    window.localStorage.setItem('motor-city-token', payload.token);
+    renderPortal(payload.user);
+    setAuthFeedback('Signup successful. You are now logged in.');
+    signupForm.reset();
+    await Promise.all([loadOrders(), loadInbox()]);
+  } catch (error) {
+    setAuthFeedback(error.message, true);
+  }
+});
+
+loginForm?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const formData = new FormData(loginForm);
+  try {
+    const payload = await apiFetch('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: formData.get('email'),
+        password: formData.get('password'),
+      }),
+    });
+    state.authToken = payload.token;
+    state.user = payload.user;
+    window.localStorage.setItem('motor-city-token', payload.token);
+    renderPortal(payload.user);
+    setAuthFeedback('Login successful.');
+    loginForm.reset();
+    await Promise.all([loadOrders(), loadInbox()]);
+  } catch (error) {
+    setAuthFeedback(error.message, true);
+  }
+});
+
+logoutButton?.addEventListener('click', () => {
+  state.authToken = '';
+  state.user = null;
+  window.localStorage.removeItem('motor-city-token');
+  if (orderList) orderList.innerHTML = '';
+  if (inboxList) inboxList.innerHTML = '';
+  renderPortal();
+  setAuthFeedback('Logged out.');
+});
+
+adminRefresh?.addEventListener('click', async () => {
+  try {
+    const [usersPayload, ordersPayload] = await Promise.all([
+      apiFetch('/api/admin/users'),
+      apiFetch('/api/admin/orders')
+    ]);
+    adminUsers.textContent = JSON.stringify(usersPayload.users, null, 2);
+    adminOrders.textContent = JSON.stringify(ordersPayload.orders, null, 2);
+  } catch (error) {
+    setAuthFeedback(error.message, true);
+  }
+});
 
 contactForm?.addEventListener('submit', (event) => {
   event.preventDefault();
@@ -564,8 +768,10 @@ chatbotQuickActions?.addEventListener('click', (event) => {
 
 renderProducts();
 renderCart();
+handleCheckoutQueryStatus();
 initFluidBackground();
 postChatMessage('bot', 'Hi! I’m your storefront assistant. Ask about packages, pricing, your cart, or checkout.');
+void loadSession();
 
 
 function initFluidBackground() {

@@ -7,7 +7,9 @@ const DATA_FILE = path.join(DATA_DIR, 'database.json');
 const defaultData = {
   users: [],
   subscriptions: [],
-  paymentEvents: []
+  paymentEvents: [],
+  orders: [],
+  inboxMessages: []
 };
 
 function ensureDataFile() {
@@ -31,7 +33,9 @@ function readData() {
       ...parsed,
       users: parsed.users || [],
       subscriptions: parsed.subscriptions || [],
-      paymentEvents: parsed.paymentEvents || []
+      paymentEvents: parsed.paymentEvents || [],
+      orders: parsed.orders || [],
+      inboxMessages: parsed.inboxMessages || []
     };
   } catch {
     return structuredClone(defaultData);

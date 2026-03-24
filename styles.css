@@ -893,6 +893,54 @@ button {
   color: var(--muted);
 }
 
+.portal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.stack-form {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.stack-form input {
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  padding: 0.65rem 0.75rem;
+}
+
+.feedback-copy {
+  margin: 0.8rem 0 1.2rem;
+  color: var(--muted);
+}
+
+.order-list {
+  display: grid;
+  gap: 0.55rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.order-list li {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.65rem 0.75rem;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.admin-block {
+  max-height: 220px;
+  overflow: auto;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.7rem;
+}
+
 
 
 @keyframes panelFloat {
@@ -909,6 +957,7 @@ button {
   .hero-layout,
   .section-heading.split,
   .contact,
+  .portal-grid,
   .product-grid,
   .collection-grid,
   .benefit-grid,
