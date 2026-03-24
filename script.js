@@ -67,6 +67,16 @@ const backdrop = document.querySelector('[data-backdrop]');
 const checkoutButton = document.querySelector('#checkout-button');
 const contactForm = document.querySelector('#contact-form');
 const contactFeedback = document.querySelector('#contact-feedback');
+const chatLog = document.querySelector('#chat-log');
+const chatForm = document.querySelector('#chat-form');
+const chatInput = document.querySelector('#chat-input');
+const chatStatus = document.querySelector('#chat-status');
+const apiKeyInput = document.querySelector('#api-key-input');
+const saveApiKeyButton = document.querySelector('#save-api-key');
+const clearApiKeyButton = document.querySelector('#clear-api-key');
+const quickPromptButtons = document.querySelectorAll('[data-chat-prompt]');
+
+let chatHistory = [];
 
 function loadCart() {
   try {
@@ -86,6 +96,120 @@ function formatCurrency(value) {
     currency: 'USD',
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+function loadApiKey() {
+  return window.localStorage.getItem('motor-city-openai-key') || '';
+}
+
+function saveApiKey(value) {
+  if (!value) {
+    window.localStorage.removeItem('motor-city-openai-key');
+    updateChatModeLabel();
+    return;
+  }
+
+  window.localStorage.setItem('motor-city-openai-key', value.trim());
+  updateChatModeLabel();
+}
+
+function updateChatModeLabel() {
+  if (!chatStatus) {
+    return;
+  }
+
+  chatStatus.textContent = loadApiKey() ? 'Live OpenAI mode' : 'Local smart mode';
+}
+
+function appendMessage(role, text) {
+  if (!chatLog) {
+    return;
+  }
+
+  const message = document.createElement('article');
+  message.className = `chat-message ${role === 'assistant' ? 'assistant' : 'user'}`;
+  message.innerHTML = `<p>${text}</p>`;
+  chatLog.appendChild(message);
+  chatLog.scrollTop = chatLog.scrollHeight;
+}
+
+function getLocalAssistantReply(prompt) {
+  const text = prompt.toLowerCase();
+  const webProduct = products.find((product) => product.category === 'web');
+  const brandProduct = products.find((product) => product.id === 'signature-brand-system');
+  const launchProduct = products.find((product) => product.id === 'launch-creative-pack');
+
+  if (text.includes('startup') || text.includes('first')) {
+    return `Start with ${brandProduct.name} (${formatCurrency(brandProduct.price)}) to lock in brand clarity, then add ${webProduct.name} when you're ready to launch your site.`;
+  }
+
+  if (text.includes('3000') || text.includes('budget')) {
+    return `A solid mix near $3,000 is ${webProduct.name} + ${launchProduct.name}. Together they total ${formatCurrency(webProduct.price + launchProduct.price)} and cover website plus launch graphics.`;
+  }
+
+  if (text.includes('pair') || text.includes('upsell') || text.includes('web')) {
+    return `Pair Web launch system with Signature brand system for a stronger conversion story. Add Launch creative pack if you want campaign assets right away.`;
+  }
+
+  const featured = products.slice(0, 3).map((product) => `${product.name} (${formatCurrency(product.price)})`).join(', ');
+  return `I can recommend packages based on your goal, timeline, or budget. Popular options include ${featured}.`;
+}
+
+async function getOpenAIReply(prompt) {
+  const apiKey = loadApiKey();
+  const catalog = products
+    .map((product) => `${product.name} (${product.category}) - ${formatCurrency(product.price)}: ${product.description}`)
+    .join('\n');
+
+  const response = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'gpt-4.1-mini',
+      input: [
+        {
+          role: 'system',
+          content:
+            'You are a concise sales concierge for Motor city designer. Recommend package combinations using the provided catalog and mention prices.',
+        },
+        {
+          role: 'user',
+          content: `Catalog:\n${catalog}\n\nCustomer question: ${prompt}`,
+        },
+      ],
+      max_output_tokens: 220,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Unable to reach OpenAI with the provided API key.');
+  }
+
+  const data = await response.json();
+  return data.output_text || 'I could not generate a response right now. Please try again.';
+}
+
+async function handleChatPrompt(prompt) {
+  appendMessage('user', prompt);
+  chatHistory.push({ role: 'user', content: prompt });
+
+  appendMessage('assistant', 'Thinking...');
+  const placeholder = chatLog?.lastElementChild;
+
+  try {
+    const reply = loadApiKey() ? await getOpenAIReply(prompt) : getLocalAssistantReply(prompt);
+    if (placeholder) {
+      placeholder.innerHTML = `<p>${reply}</p>`;
+    }
+    chatHistory.push({ role: 'assistant', content: reply });
+  } catch (error) {
+    if (placeholder) {
+      placeholder.innerHTML = `<p>AI mode hit an issue. I switched to smart local guidance: ${getLocalAssistantReply(prompt)}</p>`;
+    }
+  }
 }
 
 function getVisibleProducts() {
@@ -322,6 +446,39 @@ contactForm?.addEventListener('submit', (event) => {
     contactFeedback.style.color = '';
   }, 2200);
 });
+
+chatForm?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const prompt = chatInput.value.trim();
+
+  if (!prompt) {
+    return;
+  }
+
+  chatInput.value = '';
+  await handleChatPrompt(prompt);
+});
+
+saveApiKeyButton?.addEventListener('click', () => {
+  saveApiKey(apiKeyInput.value);
+  apiKeyInput.value = '';
+  appendMessage('assistant', loadApiKey() ? 'OpenAI key saved. Live AI mode is on.' : 'No API key found. Staying in local smart mode.');
+});
+
+clearApiKeyButton?.addEventListener('click', () => {
+  saveApiKey('');
+  apiKeyInput.value = '';
+  appendMessage('assistant', 'API key removed. Switched back to local smart mode.');
+});
+
+quickPromptButtons.forEach((button) => {
+  button.addEventListener('click', async () => {
+    await handleChatPrompt(button.dataset.chatPrompt);
+  });
+});
+
+appendMessage('assistant', 'Hi! I can recommend the best package mix based on your goals and budget.');
+updateChatModeLabel();
 
 renderProducts();
 renderCart();

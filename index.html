@@ -26,6 +26,7 @@
             <a href="#shop">Shop</a>
             <a href="#collections">Collections</a>
             <a href="#why-us">Why us</a>
+            <a href="#ai-chat">AI Chat</a>
             <a href="#faq">FAQ</a>
             <a href="#contact">Contact</a>
           </div>
@@ -191,6 +192,57 @@
               “It instantly upgraded the perceived value of the packages we offer.”
               <footer>— Creative operator</footer>
             </blockquote>
+          </div>
+        </section>
+
+        <section class="section ai-chat-section" id="ai-chat">
+          <div class="section-heading split">
+            <div>
+              <p class="eyebrow">AI assistant</p>
+              <h2>Ask the storefront chatbot for package recommendations.</h2>
+            </div>
+            <div>
+              <p>
+                Use quick prompts or ask in your own words. Add an OpenAI API
+                key to enable live AI responses, or keep using the built-in smart
+                assistant for instant guided suggestions.
+              </p>
+            </div>
+          </div>
+          <div class="chat-layout">
+            <article class="chat-card">
+              <header class="chat-header">
+                <div>
+                  <p class="eyebrow">Chatbot</p>
+                  <h3>Motor city AI concierge</h3>
+                </div>
+                <span class="chat-status" id="chat-status">Local smart mode</span>
+              </header>
+              <div class="chat-log" id="chat-log" aria-live="polite"></div>
+              <form class="chat-input-row" id="chat-form">
+                <label class="sr-only" for="chat-input">Chat input</label>
+                <input id="chat-input" name="prompt" type="text" placeholder="Ask what package fits your project..." required />
+                <button class="button primary" type="submit">Send</button>
+              </form>
+            </article>
+            <aside class="chat-controls panel">
+              <h3>AI setup</h3>
+              <p>Paste your OpenAI API key to enable live AI-powered replies in this frontend demo.</p>
+              <label>
+                OpenAI API key
+                <input id="api-key-input" type="password" placeholder="sk-..." autocomplete="off" />
+              </label>
+              <div class="chat-control-actions">
+                <button class="button secondary" id="save-api-key" type="button">Save key</button>
+                <button class="button secondary" id="clear-api-key" type="button">Clear key</button>
+              </div>
+              <div class="quick-prompts">
+                <p class="form-note">Try a quick question:</p>
+                <button class="filter-chip quick-prompt" type="button" data-chat-prompt="I'm a startup. Which package should I buy first?">Startup recommendation</button>
+                <button class="filter-chip quick-prompt" type="button" data-chat-prompt="Build me a $3000 package mix for launch month.">Budget package mix</button>
+                <button class="filter-chip quick-prompt" type="button" data-chat-prompt="What should I pair with the Web launch system?">Upsell suggestions</button>
+              </div>
+            </aside>
           </div>
         </section>
 

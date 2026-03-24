@@ -452,7 +452,8 @@ button {
 .collection-grid,
 .benefit-grid,
 .testimonial-grid,
-.contact {
+.contact,
+.chat-layout {
   display: grid;
   gap: 1.25rem;
 }
@@ -550,6 +551,113 @@ button {
 .contact {
   grid-template-columns: 0.9fr 1.1fr;
   align-items: start;
+}
+
+.chat-layout {
+  grid-template-columns: 1.3fr 0.7fr;
+  align-items: start;
+}
+
+.chat-card {
+  padding: 1.2rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  min-height: 500px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 1rem;
+}
+
+.chat-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.chat-header h3 {
+  margin: 0;
+}
+
+.chat-status {
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: #8af0c6;
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+
+.chat-log {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 0.8rem;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: 0.8rem;
+  max-height: 340px;
+  background: rgba(5, 10, 18, 0.55);
+}
+
+.chat-message {
+  padding: 0.8rem 0.9rem;
+  border-radius: 14px;
+  max-width: 90%;
+}
+
+.chat-message p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.chat-message.user {
+  justify-self: end;
+  background: rgba(96, 165, 250, 0.17);
+  border: 1px solid rgba(96, 165, 250, 0.25);
+}
+
+.chat-message.assistant {
+  justify-self: start;
+  background: rgba(249, 115, 22, 0.11);
+  border: 1px solid rgba(249, 115, 22, 0.24);
+}
+
+.chat-input-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.7rem;
+}
+
+.chat-input-row input,
+.chat-controls input {
+  width: 100%;
+  padding: 0.95rem 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(5, 10, 18, 0.78);
+  color: var(--text);
+}
+
+.chat-controls {
+  padding: 1.3rem;
+}
+
+.chat-controls h3 {
+  margin-top: 0;
+}
+
+.chat-control-actions,
+.quick-prompts {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.quick-prompt {
+  text-align: left;
 }
 
 .contact-form {
@@ -689,6 +797,7 @@ button {
   .hero-layout,
   .section-heading.split,
   .contact,
+  .chat-layout,
   .product-grid,
   .collection-grid,
   .benefit-grid,
