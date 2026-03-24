@@ -29,14 +29,15 @@ async function getAccessToken() {
   return payload.access_token;
 }
 
-async function paypalRequest(path, method = 'GET', body) {
+async function paypalRequest(path, method = 'GET', body, additionalHeaders = {}) {
   const token = await getAccessToken();
 
   const response = await fetch(`${PAYPAL_BASE_URL}${path}`, {
     method,
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      ...additionalHeaders
     },
     body: body ? JSON.stringify(body) : undefined
   });
@@ -51,24 +52,81 @@ async function paypalRequest(path, method = 'GET', body) {
   return json;
 }
 
-async function createOrder({ amount, currency = 'USD', customId, returnUrl, cancelUrl }) {
-  return paypalRequest('/v2/checkout/orders', 'POST', {
+async function createOrder({
+  amount,
+  currency = 'USD',
+  customId,
+  returnUrl,
+  cancelUrl,
+  invoiceId,
+  description,
+  items,
+  payeeEmail,
+  requestId,
+  customerEmail
+}) {
+  const purchaseUnit = {
+    custom_id: customId,
+    amount: {
+      currency_code: currency,
+      value: amount.toFixed(2)
+    }
+  };
+
+  if (invoiceId) {
+    purchaseUnit.invoice_id = invoiceId;
+  }
+
+  if (description) {
+    purchaseUnit.description = description;
+  }
+
+  if (Array.isArray(items) && items.length) {
+    purchaseUnit.items = items;
+    purchaseUnit.amount.breakdown = {
+      item_total: {
+        currency_code: currency,
+        value: amount.toFixed(2)
+      }
+    };
+  }
+
+  if (payeeEmail) {
+    purchaseUnit.payee = {
+      email_address: payeeEmail
+    };
+  }
+
+  const payload = {
     intent: 'CAPTURE',
-    purchase_units: [
-      {
-        custom_id: customId,
-        amount: {
-          currency_code: currency,
-          value: amount.toFixed(2)
+    purchase_units: [purchaseUnit]
+  };
+
+  if (customerEmail) {
+    payload.payment_source = {
+      paypal: {
+        email_address: customerEmail,
+        experience_context: {
+          user_action: 'PAY_NOW',
+          return_url: returnUrl,
+          cancel_url: cancelUrl
         }
       }
-    ],
-    application_context: {
-      user_action: 'PAY_NOW',
-      return_url: returnUrl,
-      cancel_url: cancelUrl
+    };
+  } else {
+    payload.payment_source = {
+      paypal: {
+        experience_context: {
+          user_action: 'PAY_NOW',
+          return_url: returnUrl,
+          cancel_url: cancelUrl
+        }
+      }
     }
-  });
+  }
+
+  const headers = requestId ? { 'PayPal-Request-Id': requestId } : {};
+  return paypalRequest('/v2/checkout/orders', 'POST', payload, headers);
 }
 
 async function captureOrder(orderId) {

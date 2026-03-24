@@ -681,6 +681,47 @@ button {
   margin-bottom: 0.5rem;
 }
 
+.checkout-panel {
+  margin-top: 0.8rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.checkout-panel h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.checkout-panel label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+.checkout-panel input,
+.checkout-panel textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  padding: 0.6rem 0.7rem;
+}
+
+.invoice-preview {
+  border: 1px dashed rgba(249, 115, 22, 0.45);
+  background: rgba(249, 115, 22, 0.08);
+  border-radius: 12px;
+  padding: 0.65rem 0.7rem;
+  font-size: 0.84rem;
+  color: #ffd9b9;
+}
+
+.paypal-button-container {
+  min-height: 40px;
+}
+
 .backdrop {
   position: fixed;
   inset: 0;

@@ -18,6 +18,7 @@ const {
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
+const CHECKOUT_RECEIVER_EMAIL = process.env.PAYPAL_RECEIVER_EMAIL || 'higherqualitydesigns@gmail.com';
 
 if (!process.env.JWT_SECRET) {
   throw new Error('Missing JWT_SECRET environment variable.');
@@ -25,6 +26,7 @@ if (!process.env.JWT_SECRET) {
 
 app.use(morgan('dev'));
 app.use(express.json());
+app.use(express.static(process.cwd()));
 
 const signupSchema = z.object({
   email: z.string().email(),
@@ -59,6 +61,29 @@ const subscriptionSchema = z.object({
   cancelUrl: z.string().url()
 });
 
+const publicOrderSchema = z.object({
+  cart: z.array(
+    z.object({
+      id: z.string().min(2),
+      quantity: z.number().int().positive().max(20)
+    })
+  ).min(1),
+  customer: z.object({
+    name: z.string().min(2),
+    email: z.string().email()
+  }),
+  notes: z.string().max(600).optional()
+});
+
+const storefrontCatalog = {
+  'brand-starter-kit': { name: 'Brand starter kit', unitAmount: 850 },
+  'signature-brand-system': { name: 'Signature brand system', unitAmount: 1600 },
+  'web-launch-system': { name: 'Web launch system', unitAmount: 2400 },
+  'storefront-refresh': { name: 'Storefront refresh', unitAmount: 3200 },
+  'launch-creative-pack': { name: 'Launch creative pack', unitAmount: 700 },
+  'monthly-design-pit-pass': { name: 'Monthly design pit pass', unitAmount: 1200 }
+};
+
 function activeSubscriptionFor(userId) {
   const data = readData();
   return data.subscriptions.find((sub) => sub.userId === userId && sub.status === 'ACTIVE');
@@ -80,6 +105,17 @@ function requireActiveSubscription(req, res, next) {
 
 app.get('/health', (_, res) => {
   res.json({ ok: true });
+});
+
+app.get('/api/public/paypal/config', (_, res) => {
+  const clientId = process.env.PAYPAL_CLIENT_ID || null;
+
+  return res.json({
+    clientId,
+    currency: 'USD',
+    receiverEmail: CHECKOUT_RECEIVER_EMAIL,
+    ready: Boolean(clientId)
+  });
 });
 
 app.post('/api/auth/signup', async (req, res) => {
@@ -199,6 +235,113 @@ app.post('/api/billing/checkout/order', requireAuth, async (req, res) => {
     });
 
     return res.status(201).json(order);
+  } catch (error) {
+    return res.status(502).json({ error: error.message });
+  }
+});
+
+app.post('/api/public/paypal/order', async (req, res) => {
+  const parsed = publicOrderSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.flatten() });
+  }
+
+  if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) {
+    return res.status(503).json({ error: 'PayPal is not configured on the server.' });
+  }
+
+  const { cart, customer, notes } = parsed.data;
+  const lineItems = cart.map((item) => {
+    const catalogItem = storefrontCatalog[item.id];
+    if (!catalogItem) {
+      return null;
+    }
+
+    return {
+      id: item.id,
+      name: catalogItem.name,
+      quantity: item.quantity,
+      unitAmount: catalogItem.unitAmount
+    };
+  });
+
+  if (lineItems.some((item) => item === null)) {
+    return res.status(400).json({ error: 'Cart includes an unknown package id.' });
+  }
+
+  const normalizedItems = lineItems;
+  const subtotal = normalizedItems.reduce((sum, item) => sum + (item.unitAmount * item.quantity), 0);
+  const total = Number(subtotal.toFixed(2));
+  const invoiceId = `MCD-${Date.now()}-${randomUUID().slice(0, 8).toUpperCase()}`;
+
+  try {
+    const order = await createOrder({
+      amount: total,
+      currency: 'USD',
+      customId: customer.email,
+      returnUrl: `${req.protocol}://${req.get('host')}/?checkout=success&invoice=${invoiceId}`,
+      cancelUrl: `${req.protocol}://${req.get('host')}/?checkout=cancelled&invoice=${invoiceId}`,
+      invoiceId,
+      description: notes || `Creative services invoice for ${customer.name}`,
+      items: normalizedItems.map((item) => ({
+        name: item.name,
+        quantity: String(item.quantity),
+        unit_amount: {
+          currency_code: 'USD',
+          value: item.unitAmount.toFixed(2)
+        }
+      })),
+      payeeEmail: CHECKOUT_RECEIVER_EMAIL,
+      requestId: invoiceId,
+      customerEmail: customer.email
+    });
+
+    updateData((data) => {
+      data.paymentEvents.push({
+        id: randomUUID(),
+        userId: null,
+        eventType: 'PUBLIC_ORDER_CREATED',
+        provider: 'paypal',
+        providerId: order.id,
+        payload: {
+          order,
+          invoiceId,
+          customer
+        },
+        createdAt: new Date().toISOString()
+      });
+      return data;
+    });
+
+    return res.status(201).json({
+      ...order,
+      invoiceId,
+      receiverEmail: CHECKOUT_RECEIVER_EMAIL
+    });
+  } catch (error) {
+    return res.status(502).json({ error: error.message });
+  }
+});
+
+app.post('/api/public/paypal/order/:orderId/capture', async (req, res) => {
+  try {
+    const order = await captureOrder(req.params.orderId);
+
+    updateData((data) => {
+      data.paymentEvents.push({
+        id: randomUUID(),
+        userId: null,
+        eventType: 'PUBLIC_ORDER_CAPTURED',
+        provider: 'paypal',
+        providerId: order.id,
+        payload: order,
+        createdAt: new Date().toISOString()
+      });
+      return data;
+    });
+
+    return res.json(order);
   } catch (error) {
     return res.status(502).json({ error: error.message });
   }

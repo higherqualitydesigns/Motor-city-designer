@@ -22,6 +22,13 @@ Copy `.env.example` to `.env` and fill values:
 cp .env.example .env
 ```
 
+Required PayPal variables for live storefront checkout:
+
+- `PAYPAL_CLIENT_ID`
+- `PAYPAL_CLIENT_SECRET`
+- `PAYPAL_ENV` (`sandbox` or `live`)
+- Optional: `PAYPAL_RECEIVER_EMAIL` (defaults to `higherqualitydesigns@gmail.com`)
+
 ## 3) Start server
 
 ```bash
@@ -46,6 +53,14 @@ Server runs on `http://localhost:3000` by default.
 
 - `POST /api/billing/checkout/order`
 - `POST /api/billing/checkout/order/:orderId/capture`
+
+### Public storefront PayPal checkout (no auth)
+
+- `GET /api/public/paypal/config`
+- `POST /api/public/paypal/order`
+- `POST /api/public/paypal/order/:orderId/capture`
+
+The public order endpoint validates package IDs against the server-side storefront catalog and calculates totals on the server to prevent client-side price tampering.
 
 ### PayPal subscriptions
 

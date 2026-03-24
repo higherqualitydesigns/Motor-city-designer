@@ -120,7 +120,7 @@
             "name": "Does this connect to a real checkout?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "This version provides a polished frontend and demo checkout flow that can later connect to Shopify, Stripe, or a CRM."
+              "text": "Yes. Checkout now uses live PayPal buttons, generates invoice IDs, and sends payment to the configured business account."
             }
           },
           {
@@ -346,7 +346,7 @@
             </details>
             <details class="faq-item">
               <summary>Does this connect to a real checkout?</summary>
-              <p>This version provides a polished frontend experience and demo checkout flow that can later be connected to Shopify, Stripe, or a CRM.</p>
+              <p>Yes. Checkout now supports live PayPal payment buttons, invoice IDs, and capture confirmation.</p>
             </details>
             <details class="faq-item">
               <summary>Can you sell services and digital products together?</summary>
@@ -408,8 +408,26 @@
           <span>Subtotal</span>
           <strong id="cart-subtotal">$0</strong>
         </div>
-        <p class="form-note">Taxes and implementation details are finalized during onboarding.</p>
-        <button class="button primary full-width" type="button" id="checkout-button">Start checkout</button>
+        <p class="form-note">Secure checkout by PayPal. Funds are routed to <strong>higherqualitydesigns@gmail.com</strong> with invoice tracking.</p>
+        <div class="checkout-panel" id="checkout-panel">
+          <h3>Checkout details</h3>
+          <label>
+            Name
+            <input id="checkout-name" type="text" placeholder="Client full name" autocomplete="name" />
+          </label>
+          <label>
+            Email
+            <input id="checkout-email" type="email" placeholder="client@email.com" autocomplete="email" />
+          </label>
+          <label>
+            Invoice notes
+            <textarea id="checkout-notes" rows="3" placeholder="Optional scope or billing notes"></textarea>
+          </label>
+          <div class="invoice-preview" id="invoice-preview">Invoice will be generated after you continue.</div>
+          <button class="button primary full-width" type="button" id="checkout-button">Continue to PayPal</button>
+          <div id="paypal-button-container" class="paypal-button-container" hidden></div>
+          <p class="form-note" id="checkout-feedback">Complete the form above to launch PayPal checkout.</p>
+        </div>
       </div>
     </aside>
 
