@@ -51,12 +51,13 @@ async function paypalRequest(path, method = 'GET', body) {
   return json;
 }
 
-async function createOrder({ amount, currency = 'USD', customId, returnUrl, cancelUrl }) {
+async function createOrder({ amount, currency = 'USD', customId, returnUrl, cancelUrl, payeeEmail }) {
   return paypalRequest('/v2/checkout/orders', 'POST', {
     intent: 'CAPTURE',
     purchase_units: [
       {
         custom_id: customId,
+        ...(payeeEmail ? { payee: { email_address: payeeEmail } } : {}),
         amount: {
           currency_code: currency,
           value: amount.toFixed(2)

@@ -59,6 +59,20 @@ const subscriptionSchema = z.object({
   cancelUrl: z.string().url()
 });
 
+const publicOrderSchema = orderSchema.extend({
+  items: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        name: z.string().min(1),
+        quantity: z.number().int().positive(),
+        unitPrice: z.number().positive()
+      })
+    )
+    .max(50)
+    .optional()
+});
+
 function activeSubscriptionFor(userId) {
   const data = readData();
   return data.subscriptions.find((sub) => sub.userId === userId && sub.status === 'ACTIVE');
@@ -170,6 +184,43 @@ app.get('/api/content/premium', requireAuth, requireActiveSubscription, (req, re
     message: 'Premium access granted.',
     subscription: req.subscription
   });
+});
+
+
+app.post('/api/billing/checkout/public-order', async (req, res) => {
+  const parsed = publicOrderSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.flatten() });
+  }
+
+  try {
+    const order = await createOrder({
+      ...parsed.data,
+      customId: `guest-${randomUUID()}`,
+      payeeEmail: process.env.PAYPAL_MERCHANT_EMAIL || 'higherqualitydesigns@gmail.com'
+    });
+
+    updateData((data) => {
+      data.paymentEvents.push({
+        id: randomUUID(),
+        userId: null,
+        eventType: 'PUBLIC_ORDER_CREATED',
+        provider: 'paypal',
+        providerId: order.id,
+        payload: {
+          ...order,
+          cart: parsed.data.items || []
+        },
+        createdAt: new Date().toISOString()
+      });
+      return data;
+    });
+
+    return res.status(201).json(order);
+  } catch (error) {
+    return res.status(502).json({ error: error.message });
+  }
 });
 
 app.post('/api/billing/checkout/order', requireAuth, async (req, res) => {
