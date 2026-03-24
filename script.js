@@ -3,6 +3,8 @@ const products = [
     id: 'brand-starter-kit',
     name: 'Brand starter kit',
     category: 'branding',
+    image: 'assets/brand-starter-kit.svg',
+    imageAlt: 'Brand starter kit preview card with logo concept and style guide blocks',
     price: 850,
     description: 'A streamlined identity package for new businesses that need a confident visual starting point.',
     features: ['Primary logo concept', 'Color and type direction', 'Mini style guide'],
@@ -11,6 +13,8 @@ const products = [
     id: 'signature-brand-system',
     name: 'Signature brand system',
     category: 'branding',
+    image: 'assets/signature-brand-system.svg',
+    imageAlt: 'Signature brand system preview with logo suite and brand guideline layout',
     price: 1600,
     description: 'A deeper identity package with flexible assets for businesses ready to look fully established.',
     features: ['Logo suite', 'Brand voice prompts', 'Expanded style guide'],
@@ -19,6 +23,8 @@ const products = [
     id: 'web-launch-system',
     name: 'Web launch system',
     category: 'web',
+    image: 'assets/web-launch-system.svg',
+    imageAlt: 'Web launch system preview showing homepage and modular page sections',
     price: 2400,
     description: 'A conversion-minded website package with a premium homepage and polished service sections.',
     features: ['Responsive website design', 'Strategic section layout', 'Launch handoff support'],
@@ -27,6 +33,8 @@ const products = [
     id: 'storefront-refresh',
     name: 'Storefront refresh',
     category: 'web',
+    image: 'assets/storefront-refresh.svg',
+    imageAlt: 'Storefront refresh preview with redesigned commerce panels',
     price: 3200,
     description: 'An elevated redesign for existing service or ecommerce sites that need sharper UX and merchandising.',
     features: ['Homepage redesign', 'Collection page concepts', 'Mobile optimization'],
@@ -35,6 +43,8 @@ const products = [
     id: 'launch-creative-pack',
     name: 'Launch creative pack',
     category: 'marketing',
+    image: 'assets/launch-creative-pack.svg',
+    imageAlt: 'Launch creative pack preview featuring social and campaign creative cards',
     price: 700,
     description: 'Campaign visuals for social, email, and ad placements that support a polished release.',
     features: ['Social launch graphics', 'Ad creative set', 'Promo story slides'],
@@ -43,6 +53,8 @@ const products = [
     id: 'monthly-design-pit-pass',
     name: 'Monthly design pit pass',
     category: 'marketing',
+    image: 'assets/monthly-design-pit-pass.svg',
+    imageAlt: 'Monthly design pit pass preview with retainer dashboard and task list',
     price: 1200,
     description: 'Ongoing design support for founders who need regular creative output without agency overhead.',
     features: ['Monthly priority queue', 'Graphics and page updates', 'One strategy sync'],
@@ -133,6 +145,7 @@ function renderProducts() {
 
     card.dataset.category = product.category;
     art.style.background = productArt(product.category);
+    art.innerHTML = `<img src="${product.image}" alt="${product.imageAlt}" loading="lazy" decoding="async" />`;
     tag.textContent = product.category;
     price.textContent = formatCurrency(product.price);
     title.textContent = product.name;
