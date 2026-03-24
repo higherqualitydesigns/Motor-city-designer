@@ -60,6 +60,8 @@ Server runs on `http://localhost:3000` by default.
 - `POST /api/public/paypal/order`
 - `POST /api/public/paypal/order/:orderId/capture`
 
+The public order endpoint validates package IDs against the server-side storefront catalog and calculates totals on the server to prevent client-side price tampering.
+
 ### PayPal subscriptions
 
 - `POST /api/billing/subscriptions/plan`

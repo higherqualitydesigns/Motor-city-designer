@@ -29,14 +29,15 @@ async function getAccessToken() {
   return payload.access_token;
 }
 
-async function paypalRequest(path, method = 'GET', body) {
+async function paypalRequest(path, method = 'GET', body, additionalHeaders = {}) {
   const token = await getAccessToken();
 
   const response = await fetch(`${PAYPAL_BASE_URL}${path}`, {
     method,
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      ...additionalHeaders
     },
     body: body ? JSON.stringify(body) : undefined
   });
@@ -60,7 +61,9 @@ async function createOrder({
   invoiceId,
   description,
   items,
-  payeeEmail
+  payeeEmail,
+  requestId,
+  customerEmail
 }) {
   const purchaseUnit = {
     custom_id: customId,
@@ -96,15 +99,34 @@ async function createOrder({
 
   const payload = {
     intent: 'CAPTURE',
-    purchase_units: [purchaseUnit],
-    application_context: {
-      user_action: 'PAY_NOW',
-      return_url: returnUrl,
-      cancel_url: cancelUrl
-    }
+    purchase_units: [purchaseUnit]
   };
 
-  return paypalRequest('/v2/checkout/orders', 'POST', payload);
+  if (customerEmail) {
+    payload.payment_source = {
+      paypal: {
+        email_address: customerEmail,
+        experience_context: {
+          user_action: 'PAY_NOW',
+          return_url: returnUrl,
+          cancel_url: cancelUrl
+        }
+      }
+    };
+  } else {
+    payload.payment_source = {
+      paypal: {
+        experience_context: {
+          user_action: 'PAY_NOW',
+          return_url: returnUrl,
+          cancel_url: cancelUrl
+        }
+      }
+    }
+  }
+
+  const headers = requestId ? { 'PayPal-Request-Id': requestId } : {};
+  return paypalRequest('/v2/checkout/orders', 'POST', payload, headers);
 }
 
 async function captureOrder(orderId) {

@@ -65,9 +65,7 @@ const publicOrderSchema = z.object({
   cart: z.array(
     z.object({
       id: z.string().min(2),
-      name: z.string().min(2),
-      quantity: z.number().int().positive(),
-      unitAmount: z.number().positive()
+      quantity: z.number().int().positive().max(20)
     })
   ).min(1),
   customer: z.object({
@@ -76,6 +74,15 @@ const publicOrderSchema = z.object({
   }),
   notes: z.string().max(600).optional()
 });
+
+const storefrontCatalog = {
+  'brand-starter-kit': { name: 'Brand starter kit', unitAmount: 850 },
+  'signature-brand-system': { name: 'Signature brand system', unitAmount: 1600 },
+  'web-launch-system': { name: 'Web launch system', unitAmount: 2400 },
+  'storefront-refresh': { name: 'Storefront refresh', unitAmount: 3200 },
+  'launch-creative-pack': { name: 'Launch creative pack', unitAmount: 700 },
+  'monthly-design-pit-pass': { name: 'Monthly design pit pass', unitAmount: 1200 }
+};
 
 function activeSubscriptionFor(userId) {
   const data = readData();
@@ -245,7 +252,26 @@ app.post('/api/public/paypal/order', async (req, res) => {
   }
 
   const { cart, customer, notes } = parsed.data;
-  const subtotal = cart.reduce((sum, item) => sum + (item.unitAmount * item.quantity), 0);
+  const lineItems = cart.map((item) => {
+    const catalogItem = storefrontCatalog[item.id];
+    if (!catalogItem) {
+      return null;
+    }
+
+    return {
+      id: item.id,
+      name: catalogItem.name,
+      quantity: item.quantity,
+      unitAmount: catalogItem.unitAmount
+    };
+  });
+
+  if (lineItems.some((item) => item === null)) {
+    return res.status(400).json({ error: 'Cart includes an unknown package id.' });
+  }
+
+  const normalizedItems = lineItems;
+  const subtotal = normalizedItems.reduce((sum, item) => sum + (item.unitAmount * item.quantity), 0);
   const total = Number(subtotal.toFixed(2));
   const invoiceId = `MCD-${Date.now()}-${randomUUID().slice(0, 8).toUpperCase()}`;
 
@@ -258,7 +284,7 @@ app.post('/api/public/paypal/order', async (req, res) => {
       cancelUrl: `${req.protocol}://${req.get('host')}/?checkout=cancelled&invoice=${invoiceId}`,
       invoiceId,
       description: notes || `Creative services invoice for ${customer.name}`,
-      items: cart.map((item) => ({
+      items: normalizedItems.map((item) => ({
         name: item.name,
         quantity: String(item.quantity),
         unit_amount: {
@@ -266,7 +292,9 @@ app.post('/api/public/paypal/order', async (req, res) => {
           value: item.unitAmount.toFixed(2)
         }
       })),
-      payeeEmail: CHECKOUT_RECEIVER_EMAIL
+      payeeEmail: CHECKOUT_RECEIVER_EMAIL,
+      requestId: invoiceId,
+      customerEmail: customer.email
     });
 
     updateData((data) => {

@@ -116,9 +116,7 @@ function buildCartDetails() {
 
       return {
         id: product.id,
-        name: product.name,
-        quantity: item.quantity,
-        unitAmount: product.price
+        quantity: item.quantity
       };
     })
     .filter(Boolean);
@@ -241,6 +239,10 @@ function renderCart() {
     if (invoicePreview) {
       invoicePreview.textContent = 'Invoice will be generated after you continue.';
     }
+    if (checkoutButton) {
+      checkoutButton.disabled = true;
+    }
+    setCheckoutFeedback('Complete the form above to launch PayPal checkout.');
     return;
   }
 
@@ -282,6 +284,9 @@ function renderCart() {
 
   cartSubtotal.textContent = formatCurrency(subtotal);
   cartCount.textContent = String(totalItems);
+  if (checkoutButton) {
+    checkoutButton.disabled = false;
+  }
 }
 
 function openCart() {
