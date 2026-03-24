@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Motor city designer | Creative storefront & brand studio</title>
+    <meta
+      name="description"
+      content="Motor city designer is a Detroit-inspired creative storefront for brand kits, website design packages, and high-impact launch assets."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page-glow" aria-hidden="true"></div>
+    <div class="site-shell">
+      <header class="hero" id="top">
+        <nav class="topbar" aria-label="Primary navigation">
+          <a class="brand" href="#top">Motor city designer</a>
+          <div class="nav-links">
+            <a href="#shop">Shop</a>
+            <a href="#collections">Collections</a>
+            <a href="#why-us">Why us</a>
+            <a href="#faq">FAQ</a>
+            <a href="#contact">Contact</a>
+          </div>
+          <button class="cart-launch" type="button" data-open-cart>
+            Cart <span data-cart-count>0</span>
+          </button>
+        </nav>
+
+        <div class="hero-layout">
+          <div class="hero-copy">
+            <p class="eyebrow">Shopify-style creative storefront</p>
+            <h1>Sell the look before the first sales call.</h1>
+            <p class="hero-text">
+              Motor city designer now feels like a premium online store for
+              creative services—complete with featured offers, browsable product
+              cards, collections, and a working cart experience for your design
+              packages.
+            </p>
+            <div class="hero-actions">
+              <a class="button primary" href="#shop">Shop packages</a>
+              <a class="button secondary" href="#collections">Browse collections</a>
+            </div>
+            <ul class="hero-metrics" aria-label="Storefront highlights">
+              <li>
+                <strong>6 ready-to-sell offers</strong>
+                <span>Brand, web, and launch packages</span>
+              </li>
+              <li>
+                <strong>Interactive cart</strong>
+                <span>Add, update, and review selections instantly</span>
+              </li>
+              <li>
+                <strong>Conversion-focused layout</strong>
+                <span>Structured like a modern ecommerce landing page</span>
+              </li>
+            </ul>
+          </div>
+
+          <aside class="hero-panel" aria-label="Featured store snapshot">
+            <div class="panel-top">
+              <span></span><span></span><span></span>
+            </div>
+            <div class="hero-panel-body">
+              <p class="card-label">Best seller</p>
+              <h2>Launch-ready website system</h2>
+              <p>
+                A premium storefront-style website package for founders who need
+                polish, speed, and a conversion-minded layout.
+              </p>
+              <div class="price-chip">From $2,400</div>
+              <ul class="feature-list">
+                <li>Strategic homepage and service architecture</li>
+                <li>Responsive design system and reusable sections</li>
+                <li>Launch support plus post-handoff notes</li>
+              </ul>
+              <button class="button primary full-width" type="button" data-quick-add="web-launch-system">
+                Quick add to cart
+              </button>
+            </div>
+          </aside>
+        </div>
+      </header>
+
+      <main>
+        <section class="announcement-bar">
+          <p>
+            New client offer: bundle a brand kit and website package to unlock a
+            complimentary launch graphics set.
+          </p>
+        </section>
+
+        <section class="section shop-section" id="shop">
+          <div class="section-heading split">
+            <div>
+              <p class="eyebrow">Shop packages</p>
+              <h2>Browse creative offers like products in a premium storefront.</h2>
+            </div>
+            <div>
+              <p>
+                Filter by category, compare deliverables, and add services to a
+                working cart—giving the site a much more functional,
+                Shopify-inspired experience.
+              </p>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <div class="filter-group" role="tablist" aria-label="Product filters">
+              <button class="filter-chip active" type="button" data-filter="all">All</button>
+              <button class="filter-chip" type="button" data-filter="branding">Branding</button>
+              <button class="filter-chip" type="button" data-filter="web">Web</button>
+              <button class="filter-chip" type="button" data-filter="marketing">Marketing</button>
+            </div>
+            <div class="search-box">
+              <label class="sr-only" for="product-search">Search packages</label>
+              <input id="product-search" type="search" placeholder="Search packages" />
+            </div>
+          </div>
+
+          <div class="product-grid" id="product-grid" aria-live="polite"></div>
+        </section>
+
+        <section class="section" id="collections">
+          <div class="section-heading">
+            <p class="eyebrow">Collections</p>
+            <h2>Curated paths for startups, service brands, and fast launches.</h2>
+          </div>
+          <div class="collection-grid">
+            <article class="collection-card accent-card">
+              <p>Start strong</p>
+              <h3>Brand foundation</h3>
+              <span>Logo systems, voice direction, and identity essentials.</span>
+            </article>
+            <article class="collection-card">
+              <p>Sell smarter</p>
+              <h3>Website conversion stack</h3>
+              <span>Homepage strategy, productized service layouts, and mobile polish.</span>
+            </article>
+            <article class="collection-card">
+              <p>Launch louder</p>
+              <h3>Campaign creative</h3>
+              <span>Social assets, ad sets, and launch-day visual support.</span>
+            </article>
+          </div>
+        </section>
+
+        <section class="section" id="why-us">
+          <div class="section-heading">
+            <p class="eyebrow">Why it works</p>
+            <h2>A service business presented with the clarity of ecommerce.</h2>
+          </div>
+          <div class="benefit-grid">
+            <article class="panel">
+              <h3>Productized offers</h3>
+              <p>Visitors can understand scope, pricing, and deliverables without waiting for a discovery call.</p>
+            </article>
+            <article class="panel">
+              <h3>Interactive cart flow</h3>
+              <p>Customers can build a package mix, preview subtotal, and move toward checkout-like intent.</p>
+            </article>
+            <article class="panel">
+              <h3>Trust-building layout</h3>
+              <p>The experience mirrors premium storefront UX with merchandising, featured offers, and proof points.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section testimonials">
+          <div class="section-heading">
+            <p class="eyebrow">Social proof</p>
+            <h2>Built to feel credible, premium, and ready to convert.</h2>
+          </div>
+          <div class="testimonial-grid">
+            <blockquote class="panel quote-card">
+              “This feels like a store, not just a brochure site. It makes premium design easier to buy.”
+              <footer>— Startup founder</footer>
+            </blockquote>
+            <blockquote class="panel quote-card">
+              “The product cards and cart flow create clarity before the first consultation.”
+              <footer>— Service business owner</footer>
+            </blockquote>
+            <blockquote class="panel quote-card">
+              “It instantly upgraded the perceived value of the packages we offer.”
+              <footer>— Creative operator</footer>
+            </blockquote>
+          </div>
+        </section>
+
+        <section class="section faq-section" id="faq">
+          <div class="section-heading">
+            <p class="eyebrow">FAQ</p>
+            <h2>Common questions before clients check out.</h2>
+          </div>
+          <div class="faq-list">
+            <details class="faq-item">
+              <summary>Can I customize a package after adding it to the cart?</summary>
+              <p>Yes. The cart is designed to help clients shortlist offers first, then refine scope during consultation.</p>
+            </details>
+            <details class="faq-item">
+              <summary>Does this connect to a real checkout?</summary>
+              <p>This version provides a polished frontend experience and demo checkout flow that can later be connected to Shopify, Stripe, or a CRM.</p>
+            </details>
+            <details class="faq-item">
+              <summary>Can you sell services and digital products together?</summary>
+              <p>Yes. The storefront structure supports service packages, template products, retainers, and launch add-ons in one experience.</p>
+            </details>
+          </div>
+        </section>
+
+        <section class="section contact" id="contact">
+          <div>
+            <p class="eyebrow">Custom inquiries</p>
+            <h2>Need something tailored beyond the listed packages?</h2>
+            <p>
+              Send your business details, goals, and timeline. The inquiry form
+              can support custom quoting while the storefront handles packaged
+              offers.
+            </p>
+          </div>
+          <form class="contact-form" id="contact-form">
+            <label>
+              Name
+              <input type="text" name="name" placeholder="Your name" required />
+            </label>
+            <label>
+              Email
+              <input type="email" name="email" placeholder="you@example.com" required />
+            </label>
+            <label>
+              Project type
+              <select name="projectType">
+                <option>Custom brand package</option>
+                <option>Custom website package</option>
+                <option>Launch campaign support</option>
+                <option>Monthly design retainer</option>
+              </select>
+            </label>
+            <label>
+              Project details
+              <textarea name="details" rows="4" placeholder="Tell us about your business and goals" required></textarea>
+            </label>
+            <button class="button primary full-width" type="submit">Request a custom quote</button>
+            <p class="form-note" id="contact-feedback">We’ll use your details to shape a tailored proposal and next steps.</p>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <aside class="cart-drawer" aria-label="Shopping cart" data-cart-drawer>
+      <div class="cart-header">
+        <div>
+          <p class="eyebrow">Your cart</p>
+          <h2>Selected packages</h2>
+        </div>
+        <button class="icon-button" type="button" data-close-cart aria-label="Close cart">×</button>
+      </div>
+      <div class="cart-items" id="cart-items"></div>
+      <div class="cart-footer">
+        <div class="subtotal-row">
+          <span>Subtotal</span>
+          <strong id="cart-subtotal">$0</strong>
+        </div>
+        <p class="form-note">Taxes and implementation details are finalized during onboarding.</p>
+        <button class="button primary full-width" type="button" id="checkout-button">Start checkout</button>
+      </div>
+    </aside>
+
+    <div class="backdrop" hidden data-backdrop></div>
+
+    <template id="product-card-template">
+      <article class="product-card">
+        <div class="product-art"></div>
+        <div class="product-content">
+          <div class="product-meta">
+            <span class="product-tag"></span>
+            <span class="product-price"></span>
+          </div>
+          <h3 class="product-title"></h3>
+          <p class="product-description"></p>
+          <ul class="product-features"></ul>
+          <button class="button primary full-width add-to-cart" type="button">Add to cart</button>
+        </div>
+      </article>
+    </template>
+
+    <script src="script.js"></script>
+  </body>
+</html>
