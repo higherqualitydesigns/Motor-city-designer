@@ -51,24 +51,60 @@ async function paypalRequest(path, method = 'GET', body) {
   return json;
 }
 
-async function createOrder({ amount, currency = 'USD', customId, returnUrl, cancelUrl }) {
-  return paypalRequest('/v2/checkout/orders', 'POST', {
-    intent: 'CAPTURE',
-    purchase_units: [
-      {
-        custom_id: customId,
-        amount: {
-          currency_code: currency,
-          value: amount.toFixed(2)
-        }
+async function createOrder({
+  amount,
+  currency = 'USD',
+  customId,
+  returnUrl,
+  cancelUrl,
+  invoiceId,
+  description,
+  items,
+  payeeEmail
+}) {
+  const purchaseUnit = {
+    custom_id: customId,
+    amount: {
+      currency_code: currency,
+      value: amount.toFixed(2)
+    }
+  };
+
+  if (invoiceId) {
+    purchaseUnit.invoice_id = invoiceId;
+  }
+
+  if (description) {
+    purchaseUnit.description = description;
+  }
+
+  if (Array.isArray(items) && items.length) {
+    purchaseUnit.items = items;
+    purchaseUnit.amount.breakdown = {
+      item_total: {
+        currency_code: currency,
+        value: amount.toFixed(2)
       }
-    ],
+    };
+  }
+
+  if (payeeEmail) {
+    purchaseUnit.payee = {
+      email_address: payeeEmail
+    };
+  }
+
+  const payload = {
+    intent: 'CAPTURE',
+    purchase_units: [purchaseUnit],
     application_context: {
       user_action: 'PAY_NOW',
       return_url: returnUrl,
       cancel_url: cancelUrl
     }
-  });
+  };
+
+  return paypalRequest('/v2/checkout/orders', 'POST', payload);
 }
 
 async function captureOrder(orderId) {

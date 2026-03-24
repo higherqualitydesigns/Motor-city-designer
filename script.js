@@ -53,6 +53,11 @@ const state = {
   activeFilter: 'all',
   query: '',
   cart: loadCart(),
+  checkout: {
+    invoiceId: null,
+    config: null,
+    paypalLoaded: false
+  }
 };
 
 const productGrid = document.querySelector('#product-grid');
@@ -65,6 +70,12 @@ const cartSubtotal = document.querySelector('#cart-subtotal');
 const cartCount = document.querySelector('[data-cart-count]');
 const backdrop = document.querySelector('[data-backdrop]');
 const checkoutButton = document.querySelector('#checkout-button');
+const checkoutNameInput = document.querySelector('#checkout-name');
+const checkoutEmailInput = document.querySelector('#checkout-email');
+const checkoutNotesInput = document.querySelector('#checkout-notes');
+const invoicePreview = document.querySelector('#invoice-preview');
+const paypalButtonContainer = document.querySelector('#paypal-button-container');
+const checkoutFeedback = document.querySelector('#checkout-feedback');
 const contactForm = document.querySelector('#contact-form');
 const contactFeedback = document.querySelector('#contact-feedback');
 const chatbotLaunch = document.querySelector('#chatbot-launch');
@@ -93,6 +104,33 @@ function formatCurrency(value) {
     currency: 'USD',
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+function buildCartDetails() {
+  return state.cart
+    .map((item) => {
+      const product = products.find((entry) => entry.id === item.id);
+      if (!product) {
+        return null;
+      }
+
+      return {
+        id: product.id,
+        name: product.name,
+        quantity: item.quantity,
+        unitAmount: product.price
+      };
+    })
+    .filter(Boolean);
+}
+
+function setCheckoutFeedback(message, isError = false) {
+  if (!checkoutFeedback) {
+    return;
+  }
+
+  checkoutFeedback.textContent = message;
+  checkoutFeedback.style.color = isError ? '#ffb7b7' : '';
 }
 
 function getVisibleProducts() {
@@ -196,6 +234,13 @@ function renderCart() {
     cartItems.innerHTML = '<div class="empty-cart">Your cart is empty. Add a package to start building your project stack.</div>';
     cartSubtotal.textContent = formatCurrency(0);
     cartCount.textContent = '0';
+    if (paypalButtonContainer) {
+      paypalButtonContainer.hidden = true;
+      paypalButtonContainer.innerHTML = '';
+    }
+    if (invoicePreview) {
+      invoicePreview.textContent = 'Invoice will be generated after you continue.';
+    }
     return;
   }
 
@@ -251,25 +296,134 @@ function closeCart() {
   document.body.style.overflow = '';
 }
 
-function startCheckout() {
+async function ensurePaypalSDK() {
+  if (state.checkout.paypalLoaded && window.paypal?.Buttons) {
+    return true;
+  }
+
+  const response = await fetch('/api/public/paypal/config');
+  const config = await response.json();
+  state.checkout.config = config;
+
+  if (!config.ready || !config.clientId) {
+    throw new Error('PayPal is not configured yet. Add PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET on the server.');
+  }
+
+  await new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[data-paypal-sdk]');
+    if (existing) {
+      if (window.paypal?.Buttons) {
+        state.checkout.paypalLoaded = true;
+        resolve();
+      } else {
+        existing.addEventListener('load', resolve, { once: true });
+        existing.addEventListener('error', () => reject(new Error('Failed to load PayPal SDK.')), { once: true });
+      }
+
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(config.clientId)}&currency=${config.currency}&intent=capture`;
+    script.dataset.paypalSdk = 'true';
+    script.addEventListener('load', resolve, { once: true });
+    script.addEventListener('error', () => reject(new Error('Failed to load PayPal SDK.')), { once: true });
+    document.head.appendChild(script);
+  });
+
+  state.checkout.paypalLoaded = true;
+  return true;
+}
+
+async function startCheckout() {
   if (!state.cart.length) {
-    cartSubtotal.textContent = 'Add a package first';
+    setCheckoutFeedback('Your cart is empty. Add at least one package first.', true);
     return false;
   }
 
-  checkoutButton.textContent = 'Checkout request sent';
+  const customerName = checkoutNameInput?.value.trim();
+  const customerEmail = checkoutEmailInput?.value.trim();
+  const notes = checkoutNotesInput?.value.trim();
+
+  if (!customerName || !customerEmail) {
+    setCheckoutFeedback('Please enter your name and email before continuing.', true);
+    return false;
+  }
+
   checkoutButton.disabled = true;
+  checkoutButton.textContent = 'Loading PayPal...';
 
-  window.setTimeout(() => {
-    state.cart = [];
-    saveCart();
-    renderCart();
-    checkoutButton.textContent = 'Start checkout';
+  try {
+    await ensurePaypalSDK();
+    paypalButtonContainer.hidden = false;
+    paypalButtonContainer.innerHTML = '';
+
+    window.paypal.Buttons({
+      style: {
+        layout: 'vertical',
+        color: 'gold',
+        shape: 'rect',
+        label: 'pay'
+      },
+      createOrder: async () => {
+        const response = await fetch('/api/public/paypal/order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cart: buildCartDetails(),
+            customer: {
+              name: customerName,
+              email: customerEmail
+            },
+            notes
+          })
+        });
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload.error || 'Unable to create PayPal order.');
+        }
+
+        state.checkout.invoiceId = payload.invoiceId;
+        invoicePreview.textContent = `Invoice ${payload.invoiceId} • Recipient ${payload.receiverEmail}`;
+        setCheckoutFeedback('PayPal loaded. Approve payment to finalize this invoice.');
+        return payload.id;
+      },
+      onApprove: async (data) => {
+        const response = await fetch(`/api/public/paypal/order/${data.orderID}/capture`, {
+          method: 'POST'
+        });
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload.error || 'Unable to capture payment.');
+        }
+
+        state.cart = [];
+        saveCart();
+        renderCart();
+        setCheckoutFeedback(`Payment captured successfully. Invoice ${state.checkout.invoiceId || '(generated)'} is paid.`);
+        checkoutButton.textContent = 'Continue to PayPal';
+        paypalButtonContainer.hidden = true;
+      },
+      onError: (error) => {
+        setCheckoutFeedback(error.message || 'PayPal checkout failed. Please try again.', true);
+      },
+      onCancel: () => {
+        setCheckoutFeedback('Checkout was canceled. Your invoice is still available if you want to retry.');
+      }
+    }).render('#paypal-button-container');
+
+    setCheckoutFeedback('PayPal is ready. Use the secure button below to pay your invoice.');
+    checkoutButton.textContent = 'Reload PayPal button';
+    return true;
+  } catch (error) {
+    setCheckoutFeedback(error.message, true);
+    checkoutButton.textContent = 'Continue to PayPal';
+    return false;
+  } finally {
     checkoutButton.disabled = false;
-    closeCart();
-  }, 1800);
-
-  return true;
+  }
 }
 
 function postChatMessage(role, text) {
@@ -341,9 +495,11 @@ function respondToMessage(rawMessage) {
 
   if (message.includes('checkout')) {
     openCart();
-    return startCheckout()
-      ? 'Perfect. I started the checkout flow from your cart.'
-      : 'Your cart is empty right now. Add at least one package and I can start checkout for you.';
+    if (!state.cart.length) {
+      return 'Your cart is empty right now. Add at least one package and I can start checkout for you.';
+    }
+
+    return 'Perfect. I opened checkout. Add your name and email, then tap “Continue to PayPal”.';
   }
 
   if (message.includes('contact') || message.includes('quote') || message.includes('support')) {
