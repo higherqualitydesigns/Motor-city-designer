@@ -445,6 +445,48 @@ button {
   color: #ffd2b0;
 }
 
+.proof-strip {
+  padding-top: 0.6rem;
+}
+
+.proof-label {
+  margin: 0 0 0.75rem;
+  color: #c9d4f1;
+  font-size: 0.92rem;
+}
+
+.logo-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.logo-row span {
+  padding: 0.75rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  color: #d6ddf5;
+  font-weight: 600;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.results-section {
+  padding-top: 1rem;
+}
+
+.outcome-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.outcome-card h3 {
+  margin: 0.85rem 0 0.55rem;
+  font-size: 1.35rem;
+}
+
 .section {
   padding: 2rem 0;
 }
@@ -863,6 +905,11 @@ button {
   .benefit-grid,
   .testimonial-grid,
   .hero-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .logo-row,
+  .outcome-grid {
     grid-template-columns: 1fr;
   }
 
