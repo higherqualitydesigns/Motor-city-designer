@@ -275,6 +275,32 @@
 
     <div class="backdrop" hidden data-backdrop></div>
 
+    <section class="chatbot" aria-label="Store assistant">
+      <button class="chatbot-launch" type="button" id="chatbot-launch" aria-expanded="false" aria-controls="chatbot-panel">
+        Chat with assistant
+      </button>
+      <div class="chatbot-panel" id="chatbot-panel" hidden>
+        <header class="chatbot-header">
+          <div>
+            <p class="eyebrow">Live assistant</p>
+            <h2>Motor city bot</h2>
+          </div>
+          <button class="icon-button" type="button" id="chatbot-close" aria-label="Close assistant">×</button>
+        </header>
+        <div class="chatbot-messages" id="chatbot-messages" aria-live="polite"></div>
+        <div class="chatbot-quick-actions" id="chatbot-quick-actions">
+          <button type="button" class="quick-action" data-chat-command="show packages">Show packages</button>
+          <button type="button" class="quick-action" data-chat-command="view cart">View cart</button>
+          <button type="button" class="quick-action" data-chat-command="pricing help">Pricing help</button>
+        </div>
+        <form class="chatbot-form" id="chatbot-form">
+          <label class="sr-only" for="chatbot-input">Ask the assistant a question</label>
+          <input id="chatbot-input" name="message" type="text" placeholder="Ask about packages, cart, or support..." autocomplete="off" required />
+          <button type="submit" class="button primary">Send</button>
+        </form>
+      </div>
+    </section>
+
     <template id="product-card-template">
       <article class="product-card">
         <div class="product-art"></div>
