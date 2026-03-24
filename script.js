@@ -306,11 +306,58 @@ async function apiFetch(path, options = {}) {
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
-  const payload = await response.json().catch(() => ({}));
+  const rawBody = await response.text();
+  let payload = {};
+
+  try {
+    payload = rawBody ? JSON.parse(rawBody) : {};
+  } catch {
+    payload = {};
+  }
+
   if (!response.ok) {
-    throw new Error(payload.error || 'Request failed.');
+    const formattedError = formatApiErrorMessage(payload.error);
+    const fallback = rawBody || response.statusText || `Request failed (${response.status})`;
+    throw new Error(formattedError || fallback);
   }
   return payload;
+}
+
+function formatApiErrorMessage(errorValue) {
+  if (!errorValue) {
+    return '';
+  }
+
+  if (typeof errorValue === 'string') {
+    return errorValue;
+  }
+
+  if (typeof errorValue !== 'object') {
+    return String(errorValue);
+  }
+
+  if (Array.isArray(errorValue)) {
+    return errorValue.filter(Boolean).join('; ');
+  }
+
+  const fieldErrors = errorValue.fieldErrors && typeof errorValue.fieldErrors === 'object'
+    ? Object.entries(errorValue.fieldErrors)
+      .flatMap(([field, messages]) => {
+        if (!Array.isArray(messages) || !messages.length) {
+          return [];
+        }
+
+        return `${field}: ${messages.join(', ')}`;
+      })
+    : [];
+  const formErrors = Array.isArray(errorValue.formErrors) ? errorValue.formErrors.filter(Boolean) : [];
+  const combined = [...formErrors, ...fieldErrors];
+
+  if (combined.length) {
+    return combined.join('; ');
+  }
+
+  return '';
 }
 
 function setAuthFeedback(message, isError = false) {
