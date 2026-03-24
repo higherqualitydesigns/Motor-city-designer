@@ -97,10 +97,32 @@ button {
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
   font-size: 0.95rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+.brand-mark {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  padding: 0.2rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(145deg, rgba(249, 115, 22, 0.14), rgba(96, 165, 250, 0.12));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.brand-mark svg {
+  width: 100%;
+  height: 100%;
+}
+
+.brand-text {
+  white-space: nowrap;
 }
 
 .nav-links {

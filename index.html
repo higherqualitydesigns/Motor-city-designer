@@ -140,7 +140,28 @@
     <div class="site-shell">
       <header class="hero" id="top">
         <nav class="topbar" aria-label="Primary navigation">
-          <a class="brand" href="#top">Motor city designer</a>
+          <a class="brand" href="#top" aria-label="Motor City Designer home">
+            <span class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 48 48" role="img" focusable="false">
+                <defs>
+                  <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#fb923c"></stop>
+                    <stop offset="100%" stop-color="#f97316"></stop>
+                  </linearGradient>
+                </defs>
+                <rect x="3" y="3" width="42" height="42" rx="12" fill="none" stroke="url(#logo-gradient)" stroke-width="3"></rect>
+                <path
+                  d="M12 30L18 17L24 29L30 18L36 30"
+                  fill="none"
+                  stroke="#f7f9ff"
+                  stroke-width="3.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                ></path>
+              </svg>
+            </span>
+            <span class="brand-text">Motor City Designer</span>
+          </a>
           <div class="nav-links">
             <a href="#shop">Shop</a>
             <a href="#collections">Collections</a>
