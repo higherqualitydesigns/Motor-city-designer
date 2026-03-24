@@ -55,6 +55,8 @@ const state = {
   cart: loadCart(),
 };
 
+const API_BASE_URL = window.location.origin;
+
 const productGrid = document.querySelector('#product-grid');
 const productTemplate = document.querySelector('#product-card-template');
 const searchInput = document.querySelector('#product-search');
@@ -257,6 +259,17 @@ function closeCart() {
   document.querySelector('[data-open-cart]')?.setAttribute('aria-expanded', 'false');
 }
 
+function cartSubtotalValue() {
+  return state.cart.reduce((sum, item) => {
+    const product = products.find((entry) => entry.id === item.id);
+    if (!product) {
+      return sum;
+    }
+
+    return sum + product.price * item.quantity;
+  }, 0);
+}
+
 function startCheckout() {
   if (!state.cart.length) {
     checkoutFeedback.textContent = 'Add at least one package to continue.';
@@ -264,20 +277,62 @@ function startCheckout() {
     return false;
   }
 
-  checkoutFeedback.textContent = "Checkout request sent. We're preparing your onboarding summary.";
+  const amount = cartSubtotalValue();
+  const cartLineItems = state.cart
+    .map((item) => {
+      const product = products.find((entry) => entry.id === item.id);
+      if (!product) {
+        return null;
+      }
+
+      return {
+        id: product.id,
+        name: product.name,
+        quantity: item.quantity,
+        unitPrice: product.price
+      };
+    })
+    .filter(Boolean);
+
+  checkoutFeedback.textContent = 'Connecting to PayPal checkout…';
   checkoutFeedback.style.color = 'var(--success)';
-  checkoutButton.textContent = 'Checkout request sent';
+  checkoutButton.textContent = 'Redirecting…';
   checkoutButton.disabled = true;
 
-  window.setTimeout(() => {
-    state.cart = [];
-    saveCart();
-    renderCart();
-    checkoutButton.textContent = 'Start checkout';
-    checkoutButton.disabled = false;
-    checkoutFeedback.textContent = '';
-    closeCart();
-  }, 1800);
+  void (async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/billing/checkout/public-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          amount,
+          currency: 'USD',
+          returnUrl: `${window.location.origin}/?checkout=success`,
+          cancelUrl: `${window.location.origin}/?checkout=cancelled`,
+          items: cartLineItems
+        })
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || 'Unable to create checkout order.');
+      }
+
+      const approvalUrl = payload.links?.find((link) => link.rel === 'approve')?.href;
+      if (!approvalUrl) {
+        throw new Error('PayPal approval URL missing from order response.');
+      }
+
+      window.location.assign(approvalUrl);
+    } catch (error) {
+      checkoutFeedback.textContent = error.message || 'Checkout failed. Please try again.';
+      checkoutFeedback.style.color = '#ffb7b7';
+      checkoutButton.textContent = 'Start checkout';
+      checkoutButton.disabled = false;
+    }
+  })();
 
   return true;
 }

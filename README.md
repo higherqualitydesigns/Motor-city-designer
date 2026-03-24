@@ -44,7 +44,8 @@ Server runs on `http://localhost:3000` by default.
 
 ### PayPal one-time checkout
 
-- `POST /api/billing/checkout/order`
+- `POST /api/billing/checkout/public-order` (frontend guest flow, returns PayPal approval link)
+- `POST /api/billing/checkout/order` (authenticated flow)
 - `POST /api/billing/checkout/order/:orderId/capture`
 
 ### PayPal subscriptions
@@ -58,3 +59,9 @@ Server runs on `http://localhost:3000` by default.
 ## Data storage
 
 A local JSON store is used for portability at `data/database.json`.
+
+
+### Merchant payout email
+
+Set `PAYPAL_MERCHANT_EMAIL` in `.env` to control who receives checkout funds.
+Defaults to `higherqualitydesigns@gmail.com` when not set.
