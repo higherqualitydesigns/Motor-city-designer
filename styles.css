@@ -659,6 +659,51 @@ button {
   margin-bottom: 0.5rem;
 }
 
+.suggested-block {
+  margin: 0.9rem 0 1rem;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.suggested-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffbc8b;
+  font-weight: 700;
+}
+
+.suggested-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.suggested-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.55rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.suggested-item button {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+  background: transparent;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.suggested-item small {
+  color: var(--muted);
+}
+
 .backdrop {
   position: fixed;
   inset: 0;

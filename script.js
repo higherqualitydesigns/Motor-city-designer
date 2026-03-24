@@ -65,8 +65,17 @@ const cartSubtotal = document.querySelector('#cart-subtotal');
 const cartCount = document.querySelector('[data-cart-count]');
 const backdrop = document.querySelector('[data-backdrop]');
 const checkoutButton = document.querySelector('#checkout-button');
+const suggestedBlock = document.querySelector('#suggested-block');
+const suggestedList = document.querySelector('#suggested-list');
 const contactForm = document.querySelector('#contact-form');
 const contactFeedback = document.querySelector('#contact-feedback');
+const suggestedByProduct = {
+  'brand-starter-kit': ['launch-creative-pack'],
+  'signature-brand-system': ['web-launch-system'],
+  'web-launch-system': ['launch-creative-pack', 'monthly-design-pit-pass'],
+  'storefront-refresh': ['monthly-design-pit-pass'],
+  'launch-creative-pack': ['monthly-design-pit-pass'],
+};
 
 function loadCart() {
   try {
@@ -189,6 +198,7 @@ function renderCart() {
     cartItems.innerHTML = '<div class="empty-cart">Your cart is empty. Add a package to start building your project stack.</div>';
     cartSubtotal.textContent = formatCurrency(0);
     cartCount.textContent = '0';
+    renderSuggested([]);
     return;
   }
 
@@ -230,6 +240,54 @@ function renderCart() {
 
   cartSubtotal.textContent = formatCurrency(subtotal);
   cartCount.textContent = String(totalItems);
+  renderSuggested(getSuggestedProducts());
+}
+
+function getSuggestedProducts() {
+  const idsInCart = new Set(state.cart.map((item) => item.id));
+  const suggestionIds = new Set();
+
+  state.cart.forEach((item) => {
+    const linkedSuggestions = suggestedByProduct[item.id] || [];
+    linkedSuggestions.forEach((suggestionId) => {
+      if (!idsInCart.has(suggestionId)) {
+        suggestionIds.add(suggestionId);
+      }
+    });
+  });
+
+  return [...suggestionIds]
+    .map((id) => products.find((product) => product.id === id))
+    .filter(Boolean)
+    .slice(0, 3);
+}
+
+function renderSuggested(suggestedProducts) {
+  if (!suggestedBlock || !suggestedList) {
+    return;
+  }
+
+  suggestedList.innerHTML = '';
+
+  if (!suggestedProducts.length) {
+    suggestedBlock.hidden = true;
+    return;
+  }
+
+  suggestedProducts.forEach((product) => {
+    const item = document.createElement('div');
+    item.className = 'suggested-item';
+    item.innerHTML = `
+      <div>
+        <strong>${product.name}</strong><br />
+        <small>${formatCurrency(product.price)}</small>
+      </div>
+      <button type="button" data-suggested-id="${product.id}">Add</button>
+    `;
+    suggestedList.appendChild(item);
+  });
+
+  suggestedBlock.hidden = false;
 }
 
 function openCart() {
@@ -283,6 +341,14 @@ cartItems?.addEventListener('click', (event) => {
 
   if (removeButton) {
     removeFromCart(removeButton.dataset.removeId);
+  }
+});
+
+suggestedList?.addEventListener('click', (event) => {
+  const suggestedButton = event.target.closest('[data-suggested-id]');
+
+  if (suggestedButton) {
+    addToCart(suggestedButton.dataset.suggestedId);
   }
 });
 
