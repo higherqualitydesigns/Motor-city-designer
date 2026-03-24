@@ -28,13 +28,19 @@ app.use(express.json());
 app.use(express.static(process.cwd()));
 
 const signupSchema = z.object({
-  email: z.string().email(),
+  email: z.preprocess(
+    (value) => (typeof value === 'string' ? value.trim().toLowerCase() : value),
+    z.string().email()
+  ),
   password: z.string().min(8),
-  name: z.string().min(2).max(120)
+  name: z.preprocess((value) => (typeof value === 'string' ? value.trim() : value), z.string().min(2).max(120))
 });
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.preprocess(
+    (value) => (typeof value === 'string' ? value.trim().toLowerCase() : value),
+    z.string().email()
+  ),
   password: z.string().min(8)
 });
 
@@ -162,6 +168,21 @@ function createReceipt(order) {
   };
 }
 
+function appendQueryParam(url, key, value) {
+  try {
+    const parsed = new URL(url);
+    parsed.searchParams.set(key, value);
+    return parsed.toString();
+  } catch {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+  }
+}
+
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
 app.get('/health', (_, res) => {
   res.json({ ok: true });
 });
@@ -175,7 +196,7 @@ app.post('/api/auth/signup', async (req, res) => {
 
   const { email, password, name } = parsed.data;
 
-  const existing = readData().users.find((user) => user.email.toLowerCase() === email.toLowerCase());
+  const existing = readData().users.find((user) => normalizeEmail(user.email) === email);
 
   if (existing) {
     return res.status(409).json({ error: 'Email already registered.' });
@@ -211,7 +232,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   const { email, password } = parsed.data;
-  const user = readData().users.find((entry) => entry.email.toLowerCase() === email.toLowerCase());
+  const user = readData().users.find((entry) => normalizeEmail(entry.email) === email);
 
   if (!user) {
     return res.status(401).json({ error: 'Invalid email or password.' });
@@ -315,7 +336,7 @@ app.post('/api/billing/checkout/public-order', async (req, res) => {
         status: 'APPROVED',
         links: [
           {
-            href: `${parsed.data.returnUrl}&localOrderId=${localOrder.id}`,
+            href: appendQueryParam(parsed.data.returnUrl, 'localOrderId', localOrder.id),
             rel: 'approve',
             method: 'GET'
           }

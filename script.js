@@ -637,8 +637,8 @@ signupForm?.addEventListener('submit', async (event) => {
     const payload = await apiFetch('/api/auth/signup', {
       method: 'POST',
       body: JSON.stringify({
-        name: formData.get('name'),
-        email: formData.get('email'),
+        name: String(formData.get('name') || '').trim(),
+        email: String(formData.get('email') || '').trim(),
         password: formData.get('password'),
       }),
     });
@@ -661,7 +661,7 @@ loginForm?.addEventListener('submit', async (event) => {
     const payload = await apiFetch('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({
-        email: formData.get('email'),
+        email: String(formData.get('email') || '').trim(),
         password: formData.get('password'),
       }),
     });
