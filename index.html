@@ -136,6 +136,8 @@
     </script>
   </head>
   <body>
+    <canvas class="fluid-bg" id="fluid-bg" aria-hidden="true"></canvas>
+    <canvas class="particle-layer" id="particle-layer" aria-hidden="true"></canvas>
     <div class="page-glow" aria-hidden="true"></div>
     <div class="site-shell">
       <header class="hero" id="top">
@@ -410,6 +412,7 @@
         </div>
         <p class="form-note">Taxes and implementation details are finalized during onboarding.</p>
         <button class="button primary full-width" type="button" id="checkout-button">Start checkout</button>
+        <p class="form-note" id="checkout-feedback" role="status" aria-live="polite"></p>
       </div>
     </aside>
 

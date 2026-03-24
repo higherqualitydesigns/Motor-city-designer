@@ -74,6 +74,9 @@ const chatbotMessages = document.querySelector('#chatbot-messages');
 const chatbotForm = document.querySelector('#chatbot-form');
 const chatbotInput = document.querySelector('#chatbot-input');
 const chatbotQuickActions = document.querySelector('#chatbot-quick-actions');
+const fluidCanvas = document.querySelector('#fluid-bg');
+const particleCanvas = document.querySelector('#particle-layer');
+const checkoutFeedback = document.querySelector('#checkout-feedback');
 
 function loadCart() {
   try {
@@ -243,20 +246,26 @@ function openCart() {
   cartDrawer.classList.add('is-open');
   backdrop.hidden = false;
   document.body.style.overflow = 'hidden';
+  checkoutFeedback.textContent = '';
+  document.querySelector('[data-open-cart]')?.setAttribute('aria-expanded', 'true');
 }
 
 function closeCart() {
   cartDrawer.classList.remove('is-open');
   backdrop.hidden = true;
   document.body.style.overflow = '';
+  document.querySelector('[data-open-cart]')?.setAttribute('aria-expanded', 'false');
 }
 
 function startCheckout() {
   if (!state.cart.length) {
-    cartSubtotal.textContent = 'Add a package first';
+    checkoutFeedback.textContent = 'Add at least one package to continue.';
+    checkoutFeedback.style.color = '#ffb7b7';
     return false;
   }
 
+  checkoutFeedback.textContent = "Checkout request sent. We're preparing your onboarding summary.";
+  checkoutFeedback.style.color = 'var(--success)';
   checkoutButton.textContent = 'Checkout request sent';
   checkoutButton.disabled = true;
 
@@ -266,6 +275,7 @@ function startCheckout() {
     renderCart();
     checkoutButton.textContent = 'Start checkout';
     checkoutButton.disabled = false;
+    checkoutFeedback.textContent = '';
     closeCart();
   }, 1800);
 
@@ -394,6 +404,7 @@ productGrid?.addEventListener('click', (event) => {
   }
 });
 
+document.querySelector('[data-open-cart]')?.setAttribute('aria-expanded', 'false');
 document.querySelector('[data-open-cart]')?.addEventListener('click', openCart);
 document.querySelector('[data-close-cart]')?.addEventListener('click', closeCart);
 backdrop?.addEventListener('click', closeCart);
@@ -446,6 +457,18 @@ chatbotLaunch?.addEventListener('click', () => {
 
 chatbotClose?.addEventListener('click', closeChatbot);
 
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    if (!chatbotPanel.hidden) {
+      closeChatbot();
+    }
+
+    if (cartDrawer.classList.contains('is-open')) {
+      closeCart();
+    }
+  }
+});
+
 chatbotForm?.addEventListener('submit', (event) => {
   event.preventDefault();
   const message = chatbotInput.value.trim();
@@ -473,4 +496,128 @@ chatbotQuickActions?.addEventListener('click', (event) => {
 
 renderProducts();
 renderCart();
+initFluidBackground();
 postChatMessage('bot', 'Hi! I’m your storefront assistant. Ask about packages, pricing, your cart, or checkout.');
+
+
+function initFluidBackground() {
+  if (!fluidCanvas || !particleCanvas) {
+    return;
+  }
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fluidCtx = fluidCanvas.getContext('2d');
+  const particleCtx = particleCanvas.getContext('2d');
+
+  if (!fluidCtx || !particleCtx) {
+    return;
+  }
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+  let rafId;
+  let mouse = { x: width * 0.5, y: height * 0.5 };
+
+  const blobs = [
+    { x: 0.2, y: 0.3, r: 260, color: 'rgba(249,115,22,0.3)', speed: 0.0006, phase: 0 },
+    { x: 0.75, y: 0.25, r: 280, color: 'rgba(96,165,250,0.22)', speed: 0.0005, phase: Math.PI * 0.65 },
+    { x: 0.55, y: 0.72, r: 320, color: 'rgba(52,211,153,0.18)', speed: 0.00042, phase: Math.PI * 1.2 },
+  ];
+
+  const particles = Array.from({ length: 70 }, () => ({
+    x: Math.random() * width,
+    y: Math.random() * height,
+    vx: (Math.random() - 0.5) * 0.22,
+    vy: (Math.random() - 0.5) * 0.22,
+    size: Math.random() * 2.3 + 0.4,
+    alpha: Math.random() * 0.55 + 0.15,
+  }));
+
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    [fluidCanvas, particleCanvas].forEach((canvas) => {
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+    });
+
+    fluidCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    particleCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function renderFluid(time) {
+    fluidCtx.clearRect(0, 0, width, height);
+
+    blobs.forEach((blob, index) => {
+      const wave = Math.sin(time * blob.speed + blob.phase);
+      const drift = Math.cos(time * (blob.speed * 0.77) + blob.phase);
+      const x = width * blob.x + wave * (40 + index * 8) + (mouse.x - width / 2) * 0.008;
+      const y = height * blob.y + drift * (36 + index * 6) + (mouse.y - height / 2) * 0.008;
+      const radius = blob.r + Math.sin(time * blob.speed * 1.8) * 24;
+
+      const gradient = fluidCtx.createRadialGradient(x, y, 10, x, y, radius);
+      gradient.addColorStop(0, blob.color);
+      gradient.addColorStop(1, 'rgba(5,11,20,0)');
+
+      fluidCtx.fillStyle = gradient;
+      fluidCtx.beginPath();
+      fluidCtx.arc(x, y, radius, 0, Math.PI * 2);
+      fluidCtx.fill();
+    });
+  }
+
+  function renderParticles() {
+    particleCtx.clearRect(0, 0, width, height);
+    particleCtx.fillStyle = 'rgba(255,255,255,0.85)';
+
+    particles.forEach((particle) => {
+      particle.x += particle.vx;
+      particle.y += particle.vy;
+
+      if (particle.x < -8) particle.x = width + 8;
+      if (particle.x > width + 8) particle.x = -8;
+      if (particle.y < -8) particle.y = height + 8;
+      if (particle.y > height + 8) particle.y = -8;
+
+      particleCtx.globalAlpha = particle.alpha;
+      particleCtx.beginPath();
+      particleCtx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+      particleCtx.fill();
+    });
+
+    particleCtx.globalAlpha = 1;
+  }
+
+  function frame(time) {
+    renderFluid(time);
+    renderParticles();
+
+    if (!reduceMotion) {
+      rafId = window.requestAnimationFrame(frame);
+    }
+  }
+
+  resize();
+
+  window.addEventListener('resize', resize);
+  window.addEventListener('pointermove', (event) => {
+    mouse = { x: event.clientX, y: event.clientY };
+  }, { passive: true });
+
+  if (reduceMotion) {
+    renderFluid(3500);
+    renderParticles();
+    return;
+  }
+
+  rafId = window.requestAnimationFrame(frame);
+
+  window.addEventListener('beforeunload', () => {
+    if (rafId) {
+      window.cancelAnimationFrame(rafId);
+    }
+  });
+}
