@@ -162,6 +162,17 @@ function createReceipt(order) {
   };
 }
 
+function appendQueryParam(url, key, value) {
+  try {
+    const parsed = new URL(url);
+    parsed.searchParams.set(key, value);
+    return parsed.toString();
+  } catch {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+  }
+}
+
 app.get('/health', (_, res) => {
   res.json({ ok: true });
 });
@@ -315,7 +326,7 @@ app.post('/api/billing/checkout/public-order', async (req, res) => {
         status: 'APPROVED',
         links: [
           {
-            href: `${parsed.data.returnUrl}&localOrderId=${localOrder.id}`,
+            href: appendQueryParam(parsed.data.returnUrl, 'localOrderId', localOrder.id),
             rel: 'approve',
             method: 'GET'
           }
