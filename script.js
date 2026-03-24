@@ -67,6 +67,13 @@ const backdrop = document.querySelector('[data-backdrop]');
 const checkoutButton = document.querySelector('#checkout-button');
 const contactForm = document.querySelector('#contact-form');
 const contactFeedback = document.querySelector('#contact-feedback');
+const chatbotLaunch = document.querySelector('#chatbot-launch');
+const chatbotPanel = document.querySelector('#chatbot-panel');
+const chatbotClose = document.querySelector('#chatbot-close');
+const chatbotMessages = document.querySelector('#chatbot-messages');
+const chatbotForm = document.querySelector('#chatbot-form');
+const chatbotInput = document.querySelector('#chatbot-input');
+const chatbotQuickActions = document.querySelector('#chatbot-quick-actions');
 
 function loadCart() {
   try {
@@ -244,6 +251,128 @@ function closeCart() {
   document.body.style.overflow = '';
 }
 
+function startCheckout() {
+  if (!state.cart.length) {
+    cartSubtotal.textContent = 'Add a package first';
+    return false;
+  }
+
+  checkoutButton.textContent = 'Checkout request sent';
+  checkoutButton.disabled = true;
+
+  window.setTimeout(() => {
+    state.cart = [];
+    saveCart();
+    renderCart();
+    checkoutButton.textContent = 'Start checkout';
+    checkoutButton.disabled = false;
+    closeCart();
+  }, 1800);
+
+  return true;
+}
+
+function postChatMessage(role, text) {
+  const bubble = document.createElement('article');
+  bubble.className = `chat-message ${role}`;
+  bubble.textContent = text;
+  chatbotMessages.appendChild(bubble);
+  chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+}
+
+function summarizeCart() {
+  if (!state.cart.length) {
+    return 'Your cart is currently empty. You can say “add web launch system” or tap a package in the shop.';
+  }
+
+  const details = state.cart
+    .map((item) => {
+      const product = products.find((entry) => entry.id === item.id);
+      if (!product) {
+        return '';
+      }
+
+      return `${product.name} × ${item.quantity}`;
+    })
+    .filter(Boolean)
+    .join(', ');
+
+  return `You currently have ${details}. Subtotal is ${cartSubtotal.textContent}.`;
+}
+
+function findProductByText(text) {
+  const clean = text.toLowerCase();
+  return products.find((product) => clean.includes(product.id.replaceAll('-', ' ')) || clean.includes(product.name.toLowerCase()));
+}
+
+function respondToMessage(rawMessage) {
+  const message = rawMessage.trim().toLowerCase();
+  const pickedProduct = findProductByText(message);
+
+  if (!message) {
+    return 'Send a question anytime—I can help with packages, pricing, cart actions, and next steps.';
+  }
+
+  if (message.includes('show') && (message.includes('package') || message.includes('products'))) {
+    return `We currently offer ${products.length} packages across branding, web, and marketing. Scroll to “Shop packages” to compare everything.`;
+  }
+
+  if (message.includes('pricing') || message.includes('cost') || message.includes('price')) {
+    const minimum = Math.min(...products.map((item) => item.price));
+    const maximum = Math.max(...products.map((item) => item.price));
+    return `Packages currently range from ${formatCurrency(minimum)} to ${formatCurrency(maximum)}. I can also recommend options based on your goals.`;
+  }
+
+  if (message.includes('recommend') || message.includes('best')) {
+    return 'If you want the strongest all-in-one start, Web launch system plus Signature brand system is a high-impact bundle.';
+  }
+
+  if (message.includes('view cart') || message.includes('cart status') || message === 'cart') {
+    openCart();
+    return summarizeCart();
+  }
+
+  if (message.includes('clear cart')) {
+    state.cart = [];
+    saveCart();
+    renderCart();
+    return 'Done—your cart has been cleared.';
+  }
+
+  if (message.includes('checkout')) {
+    openCart();
+    return startCheckout()
+      ? 'Perfect. I started the checkout flow from your cart.'
+      : 'Your cart is empty right now. Add at least one package and I can start checkout for you.';
+  }
+
+  if (message.includes('contact') || message.includes('quote') || message.includes('support')) {
+    return 'Use the custom inquiry form in the Contact section to request tailored scope, timeline, and pricing support.';
+  }
+
+  if (message.includes('add') && pickedProduct) {
+    addToCart(pickedProduct.id);
+    return `${pickedProduct.name} has been added to your cart. ${summarizeCart()}`;
+  }
+
+  if (pickedProduct) {
+    return `${pickedProduct.name} starts at ${formatCurrency(pickedProduct.price)} and includes ${pickedProduct.features[0].toLowerCase()}. Say “add ${pickedProduct.name}” if you want it in your cart.`;
+  }
+
+  return 'I can help with package details, pricing, adding items, viewing cart, and checkout. Try “add web launch system” or “view cart”.';
+}
+
+function openChatbot() {
+  chatbotPanel.hidden = false;
+  chatbotLaunch.setAttribute('aria-expanded', 'true');
+  chatbotInput.focus();
+}
+
+function closeChatbot() {
+  chatbotPanel.hidden = true;
+  chatbotLaunch.setAttribute('aria-expanded', 'false');
+}
+
 filterButtons.forEach((button) => {
   button.addEventListener('click', () => {
     state.activeFilter = button.dataset.filter;
@@ -286,24 +415,7 @@ cartItems?.addEventListener('click', (event) => {
   }
 });
 
-checkoutButton?.addEventListener('click', () => {
-  if (!state.cart.length) {
-    cartSubtotal.textContent = 'Add a package first';
-    return;
-  }
-
-  checkoutButton.textContent = 'Checkout request sent';
-  checkoutButton.disabled = true;
-
-  window.setTimeout(() => {
-    state.cart = [];
-    saveCart();
-    renderCart();
-    checkoutButton.textContent = 'Start checkout';
-    checkoutButton.disabled = false;
-    closeCart();
-  }, 1800);
-});
+checkoutButton?.addEventListener('click', startCheckout);
 
 contactForm?.addEventListener('submit', (event) => {
   event.preventDefault();
@@ -323,5 +435,42 @@ contactForm?.addEventListener('submit', (event) => {
   }, 2200);
 });
 
+chatbotLaunch?.addEventListener('click', () => {
+  if (chatbotPanel.hidden) {
+    openChatbot();
+    return;
+  }
+
+  closeChatbot();
+});
+
+chatbotClose?.addEventListener('click', closeChatbot);
+
+chatbotForm?.addEventListener('submit', (event) => {
+  event.preventDefault();
+  const message = chatbotInput.value.trim();
+
+  postChatMessage('user', message);
+
+  const reply = respondToMessage(message);
+  window.setTimeout(() => postChatMessage('bot', reply), 280);
+
+  chatbotForm.reset();
+  chatbotInput.focus();
+});
+
+chatbotQuickActions?.addEventListener('click', (event) => {
+  const quickAction = event.target.closest('[data-chat-command]');
+  if (!quickAction) {
+    return;
+  }
+
+  const command = quickAction.dataset.chatCommand;
+  postChatMessage('user', command);
+  const response = respondToMessage(command);
+  window.setTimeout(() => postChatMessage('bot', response), 200);
+});
+
 renderProducts();
 renderCart();
+postChatMessage('bot', 'Hi! I’m your storefront assistant. Ask about packages, pricing, your cart, or checkout.');
