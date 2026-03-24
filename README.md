@@ -63,5 +63,5 @@ A local JSON store is used for portability at `data/database.json`.
 
 ### Merchant payout email
 
-Set `PAYPAL_MERCHANT_EMAIL` in `.env` to control who receives checkout funds.
-Defaults to `higherqualitydesigns@gmail.com` when not set.
+`PAYPAL_MERCHANT_EMAIL` is optional.
+Only set it when your PayPal app is allowed to create orders for that specific merchant account.

@@ -195,10 +195,12 @@ app.post('/api/billing/checkout/public-order', async (req, res) => {
   }
 
   try {
+    const merchantEmail = process.env.PAYPAL_MERCHANT_EMAIL?.trim();
+
     const order = await createOrder({
       ...parsed.data,
       customId: `guest-${randomUUID()}`,
-      payeeEmail: process.env.PAYPAL_MERCHANT_EMAIL || 'higherqualitydesigns@gmail.com'
+      payeeEmail: merchantEmail || undefined
     });
 
     updateData((data) => {
